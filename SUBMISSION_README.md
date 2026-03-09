@@ -36,8 +36,8 @@ This package contains the source code and benchmarking tools used for the CS-253
    - Visualization plots will be available in `graphs/7_sorting_algo_comparisons/` and `graphs/quick_sort_analysis/`.
 
 ## Authors
-- Appaji Nagaraja Dheeraj (241CS110)
-- Adarsh Malipatil (241CS102)
+- Aryan Bokolia (241CS111)
+- Rishinandan D R (241CS145)
 
 ---
 
