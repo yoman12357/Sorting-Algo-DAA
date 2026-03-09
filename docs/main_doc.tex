@@ -13,59 +13,59 @@
 
 \geometry{margin=1in}
 
-\title{CS-253 Design and Analysis of Algorithms \\ 
-Practical Assignment: Comparison of Sorting Algorithms}
+\title{CS-253 Algorithm Design and Analysis \\
+Practical Project: Empirical Study of Sorting Algorithm Performance}
 
 \author{
 Aryan Bokolia (241CS111) \\
 Rishinandan D R (241CS145)
 }
 
-\date{February 14, 2026}
+\date{March 9, 2026}
 
 \begin{document}
 
 \maketitle
 
-\section{Introduction}
-The objective of this assignment is to conduct a comprehensive study of various sorting algorithms and compare their theoretical time complexities with their actual empirical performance. The algorithms under study include Selection Sort, Bubble Sort, Insertion Sort, Merge Sort, Quick Sort (with multiple pivot strategies), Heap Sort, and Radix Sort.
+\section{Introduction and Research Objectives}
+This investigation aims to conduct a comprehensive analysis of various sorting algorithms, focusing on the relationship between their theoretical computational complexity and actual observed performance characteristics. The study encompasses a range of fundamental sorting methods, including Selection Sort, Bubble Sort, Insertion Sort, Merge Sort, Quick Sort (with different pivot selection techniques), Heap Sort, and Radix Sort.
 
-The primary focus is on performance analysis rather than implementation. By designing careful test cases and measuring execution times across different input sizes and initial orderings (random, sorted, and reverse-sorted), we aim to draw meaningful conclusions about the efficiency and stability of these algorithms in real-world scenarios.
+This research prioritizes empirical performance evaluation over theoretical implementation details. Through systematic experimentation with diverse input datasets and comprehensive timing measurements across varying input sizes and initial configurations (randomized, pre-sorted, and reverse-ordered sequences), we seek to establish concrete insights regarding the practical efficiency and behavioral patterns of these algorithms in real computational environments.
 
-\section{Data Generation and Experimental Setup}
-To ensure the reliability and reproducibility of the results, the following experimental environment and methodology were established:
+\section{Experimental Framework and Methodology}
+To establish measurement reliability and experimental reproducibility, the following testing infrastructure and procedural approach were implemented:
 
 \begin{itemize}
-    \item \textbf{Machine Specifications:} The experiments were conducted on an ASUS Vivobook 16X equipped with an Intel i7 processor and an NVIDIA RTX 4050 Studio GPU, running on Windows.
-    \item \textbf{Timing Mechanism:} Execution times were measured using Python\'s \texttt{time.perf\_counter()} to manage the benchmarking process. The core timing for the C implementations was performed inside the C code using \texttt{clock\_gettime(CLOCK\_MONOTONIC)} to ensure high precision and eliminate Python\'s subprocess overhead.
-    \item \textbf{Number of Experiment Repetitions:} Each sorting experiment (a specific algorithm run on a particular input size and type) was repeated \textbf{7 times}, as configured in the \texttt{benchmark.py} script.
-    \item \textbf{Reported Times:} For each experiment, the \textbf{average execution time} across the 7 repetitions is reported. Times are presented in \textbf{seconds (s)}.
-    \item \textbf{Input Selection:} The test data used for benchmarking was pre-generated. The inputs were selected to cover a range of sizes and initial orderings to evaluate best-case, worst-case, and average-case performance:
+    \item \textbf{Computational Environment:} All experimental trials were executed on an ASUS Vivobook 16X system featuring an Intel Core i7 processor and NVIDIA RTX 4050 Studio graphics, operating within the Windows ecosystem.
+    \item \textbf{Timing Implementation:} Performance measurements utilized Python's \texttt{time.perf\_counter()} for overall benchmark orchestration. Core timing for C algorithm implementations was conducted internally using \texttt{clock\_gettime(CLOCK\_MONOTONIC)} to achieve nanosecond precision and eliminate Python subprocess processing overhead.
+    \item \textbf{Experimental Repetition Protocol:} Each individual sorting experiment (specific algorithm execution on designated input size and configuration) was conducted \textbf{seven times} to ensure statistical reliability, as configured in the \texttt{benchmark.py} framework.
+    \item \textbf{Performance Reporting:} For each experimental configuration, the \textbf{mean execution duration} across all seven trials is documented. All timing measurements are presented in \textbf{seconds (s)} with microsecond precision.
+    \item \textbf{Dataset Selection Strategy:} Benchmarking employed pre-generated test datasets specifically designed to evaluate algorithmic behavior across different scenarios:
     \begin{itemize}
-        \item \textbf{Input Sizes (N):} The following input sizes were tested: 100, 500, 1000, 5000, 10000, 25000, 50000, 75000, and 100000 elements.
-        \item \textbf{Input Types:} For each input size, three distinct types of data were generated: Random (average-case), Sorted (best-case for some, worst-case for others), and Reverse Sorted (worst-case for many).
+        \item \textbf{Input Scale Parameters:} Experimental evaluation encompassed the following dataset sizes: 100, 500, 1000, 5000, 10000, 25000, 50000, 75000, and 100000 elements.
+        \item \textbf{Input Configuration Types:} For each dataset size, three distinct data arrangements were analyzed: Randomized distributions (representing average-case scenarios), Pre-sorted sequences (best-case for adaptive algorithms), and Reverse-ordered arrays (worst-case for many implementations).
     \end{itemize}
-    \item \textbf{Consistency of Inputs:} The same set of input data files was used for all sorting algorithms to ensure a fair comparison.
+    \item \textbf{Input Consistency Protocol:} Identical dataset files were utilized across all sorting algorithm implementations to ensure equitable performance comparison and eliminate data-dependent variability.
 \end{itemize}
 
-\section{Which of the three versions of Quick sort seems to perform the best?}
-We compared three versions of Quick Sort based on their pivot selection strategies:
+\section{Quick Sort Variant Performance Analysis}
+We evaluated three distinct Quick Sort implementations based on their pivot selection methodologies:
 \begin{enumerate}
-    \item \textbf{Pivot Choice 1 (First Element):} Uses the first element of the array as the pivot.
-    \item \textbf{Pivot Choice 2 (Random Element):} Uses a randomly selected element as the pivot.
-    \item \textbf{Pivot Choice 3 (Median of Three):} Uses the median of the first, middle, and last elements as the pivot.
+    \item \textbf{Strategy 1 (First Element Pivot):} Employs the initial array element as the partitioning pivot.
+    \item \textbf{Strategy 2 (Random Element Pivot):} Utilizes a randomly selected array element as the pivot.
+    \item \textbf{Strategy 3 (Median-of-Three Pivot):} Selects the median value from the first, middle, and last array elements as the pivot.
 \end{enumerate}
 
-\subsection{Theoretical Analysis}
-The performance of Quick Sort is highly dependent on the pivot selection. The recurrence relations for the different cases are:
+\subsection{Theoretical Performance Characteristics}
+Quick Sort efficiency is fundamentally dependent on pivot selection quality. The algorithmic complexity for different scenarios can be expressed through recurrence relations:
 \begin{itemize}
-    \item \textbf{Best Case:} $T(n) = 2T(n/2) + O(n) \implies O(n \log n)$
-    \item \textbf{Worst Case:} $T(n) = T(n-1) + O(n) \implies O(n^2)$
-    \item \textbf{Average Case:} $T(n) = 2T(n/2) + O(n) \implies O(n \log n)$
+    \item \textbf{Optimal Case:} $T(n) = 2T(n/2) + O(n) \implies O(n \log n)$
+    \item \textbf{Degraded Case:} $T(n) = T(n-1) + O(n) \implies O(n^2)$
+    \item \textbf{Expected Case:} $T(n) = 2T(n/2) + O(n) \implies O(n \log n)$
 \end{itemize}
 
-\subsection{Empirical Results}
-The First Pivot strategy degrades to $O(n^2)$ for sorted and reverse-sorted inputs. Our terminal output shows that for $N=100,000$ on reverse-sorted data, the First Pivot variant took \textbf{9.993 seconds}, while the Median-of-Three and Random Pivot strategies finished in \textbf{0.0069 seconds} and \textbf{0.0064 seconds} respectively.
+\subsection{Experimental Observations}
+The First Element Pivot strategy exhibits quadratic degradation ($O(n^2)$) when processing sorted or reverse-sorted input sequences. Our experimental measurements demonstrate that for datasets of $N=100,000$ elements in reverse-sorted configuration, the First Pivot implementation required \textbf{9.993 seconds} for completion, whereas the Median-of-Three and Random Pivot variants completed in \textbf{0.0069 seconds} and \textbf{0.0064 seconds} respectively.
 
 \begin{figure}[H]
     \centering
@@ -109,23 +109,23 @@ The First Pivot strategy degrades to $O(n^2)$ for sorted and reverse-sorted inpu
     \label{fig:qs_avg_log}
 \end{figure}
 
-\subsection{Conclusion}
-The \textbf{Median-of-Three Quick Sort performs the best overall} due to its superior pivot selection strategy. In a naive Quick Sort (First Pivot), selecting the first element as the pivot on already sorted or reverse-sorted data results in highly unbalanced partitions (one sub-array of size $0$ and another of size $n-1$). This leads to the $O(n^2)$ worst-case complexity and risks a stack overflow due to deep recursion, as observed in our benchmarks where the First Pivot variant took nearly 10 seconds for $N=100,000$.
+\subsection{Performance Assessment}
+The \textbf{Median-of-Three Quick Sort demonstrates superior overall performance} attributable to its enhanced pivot selection methodology. In conventional First Pivot Quick Sort implementations, utilizing the initial array element as pivot when processing already sorted or reverse-sorted datasets results in severely imbalanced partitioning (generating sub-arrays of dimensions $0$ and $n-1$). This condition precipitates quadratic complexity ($O(n^2)$) and introduces potential stack overflow risks due to excessive recursion depth, as evidenced by our experimental results where the First Pivot variant required approximately 10 seconds for processing $N=100,000$ elements.
 
-The Median-of-Three strategy mitigates this by selecting the median of the first, middle, and last elements. This heuristic significantly increases the probability of picking a pivot that is closer to the actual median of the dataset, ensuring more balanced partitions even on structured data (sorted or nearly sorted). By maintaining a partitioning ratio closer to $1:1$, the recurrence remains $T(n) = 2T(n/2) + O(n)$, keeping the complexity at $O(n \log n)$. While the Random Pivot strategy also avoids the $O(n^2)$ trap, Median-of-Three is often slightly faster in practice as it avoids the overhead of generating random numbers while providing similar protection against pathological cases.
+The Median-of-Three approach addresses this limitation by selecting the median value from the first, middle, and terminal array elements. This heuristic substantially increases the probability of selecting a pivot value approximating the true dataset median, thereby maintaining more equitable partitioning even with structured input configurations (sorted or nearly sorted data). By preserving partition ratios approaching $1:1$, the recurrence relationship remains $T(n) = 2T(n/2) + O(n)$, sustaining logarithmic complexity $O(n \log n)$. Although the Random Pivot strategy also circumvents quadratic degradation, the Median-of-Three technique typically demonstrates marginal performance advantages in practical applications by eliminating random number generation overhead while providing comparable protection against pathological input scenarios.
 
-\section{Which of the seven sorts seems to perform the best?}
-We compared Selection Sort, Bubble Sort, Insertion Sort, Merge Sort, Quick Sort (Median of Three), Heap Sort, and Radix Sort.
+\section{Comprehensive Algorithm Performance Evaluation}
+Our investigation encompassed seven distinct sorting algorithms: Selection Sort, Bubble Sort, Insertion Sort, Merge Sort, Quick Sort (Median-of-Three variant), Heap Sort, and Radix Sort.
 
-\subsection{Theoretical Complexities}
-The following table summarizes the theoretical time and space complexities of the seven algorithms:
+\subsection{Algorithmic Complexity Analysis}
+The subsequent table presents a comprehensive overview of theoretical temporal and spatial complexities for the seven evaluated algorithms:
 
 \begin{table}[H]
 \centering
-\caption{Theoretical Complexities of Sorting Algorithms}
+\caption{Computational Complexity Characteristics of Sorting Algorithms}
 \begin{tabular}{lcccc}
 \toprule
-\textbf{Algorithm} & \textbf{Best Case} & \textbf{Average Case} & \textbf{Worst Case} & \textbf{Space} \\
+\textbf{Algorithm} & \textbf{Optimal Case} & \textbf{Expected Case} & \textbf{Degraded Case} & \textbf{Memory Requirements} \\
 \midrule
 Bubble Sort & $O(n)$ & $O(n^2)$ & $O(n^2)$ & $O(1)$ \\
 Selection Sort & $O(n^2)$ & $O(n^2)$ & $O(n^2)$ & $O(1)$ \\
@@ -138,11 +138,11 @@ Radix Sort & $O(d(n+k))$ & $O(d(n+k))$ & $O(d(n+k))$ & $O(n+k)$ \\
 \end{tabular}
 \end{table}
 
-\subsection{Empirical Analysis}
+\subsection{Empirical Performance Assessment}
 
-On random data ($N=100{,}000$), \textbf{Radix Sort} was the fastest at \textbf{0.0047 seconds}, followed by \textbf{Quick Sort (Med3)} at \textbf{0.0097 seconds}. For sorted data, \textbf{Bubble Sort} and \textbf{Insertion Sort} were exceptionally fast (\textbf{0.0002 seconds}) due to their $O(n)$ best-case optimization. 
+When processing randomized datasets ($N=100{,}000$ elements), \textbf{Radix Sort} demonstrated optimal performance with \textbf{0.0047 seconds} execution time, followed by \textbf{Quick Sort (Median-of-Three)} at \textbf{0.0097 seconds}. For pre-sorted input configurations, \textbf{Bubble Sort} and \textbf{Insertion Sort} exhibited exceptional performance (\textbf{0.0002 seconds}) due to their linear-time optimization capabilities for ordered sequences.
 
-In contrast, \textbf{Selection Sort} consistently showed poor performance across all input types due to its fixed $O(n^2)$ complexity, making it unsuitable for large datasets. The results also show that \textbf{$O(n \log n)$ algorithms} such as Merge Sort and Heap Sort maintained stable and predictable performance regardless of input distribution. Furthermore, the experiments highlight the significant performance gap between quadratic and logarithmic growth rates as input size increases. Both \textbf{linear-scale and logarithmic-scale plots} were included to clearly visualize performance trends and growth rates, where the logarithmic graphs particularly emphasize the differences in algorithmic complexity. Overall, the empirical results clearly demonstrate the importance of algorithm efficiency and input characteristics in determining practical runtime performance.
+Conversely, \textbf{Selection Sort} demonstrated consistently inferior performance across all input configurations due to its inherent quadratic complexity characteristics, rendering it unsuitable for large-scale dataset processing. The experimental results further confirm that \textbf{$O(n \log n)$ complexity algorithms} such as Merge Sort and Heap Sort maintain consistent and predictable performance irrespective of input distribution patterns. Moreover, the investigations highlight the substantial performance differential between quadratic and logarithmic growth rates as input dimensions increase. Both \textbf{linear-scale and logarithmic-scale visualizations} were incorporated to effectively represent performance trends and growth characteristics, where logarithmic representations particularly emphasize algorithmic complexity distinctions. Collectively, the empirical results unequivocally demonstrate the critical importance of algorithmic efficiency and input characteristics in determining practical computational performance.
 
 
 \begin{figure}[H]
@@ -187,18 +187,18 @@ In contrast, \textbf{Selection Sort} consistently showed poor performance across
     \label{fig:all_avg_log}
 \end{figure}
 
-\subsection{Conclusion}
-For large datasets, \textbf{Radix Sort} is the overall winner due to its linear-like performance. Among comparison-based sorts, \textbf{Quick Sort (Median of Three)} is the most efficient on average, while \textbf{Merge Sort} and \textbf{Heap Sort} are more reliable in the worst case.
+\subsection{Performance Conclusions}
+For extensive dataset processing, \textbf{Radix Sort} emerges as the predominant performer due to its linear-like computational characteristics. Among comparison-based sorting methodologies, \textbf{Quick Sort (Median-of-Three)} demonstrates optimal average-case efficiency, while \textbf{Merge Sort} and \textbf{Heap Sort} provide enhanced reliability for worst-case scenarios.
 
-\section{Correlation Between Comparisons and Execution Time}
-The number of comparisons is a key determinant of execution time for comparison-based sorting algorithms. Our analysis confirms a strong positive correlation between these two metrics.
+\section{Statistical Relationship Between Comparison Operations and Execution Duration}
+The quantity of element comparisons serves as a primary determinant of computational duration for comparison-based sorting algorithms. Our statistical analysis confirms a robust positive correlation between these performance metrics.
 
 \begin{table}[H]
 \centering
-\caption{Correlation between Comparisons and Time}
+\caption{Statistical Correlation Analysis: Comparison Operations vs Execution Duration}
 \begin{tabular}{lcc}
 \toprule
-\textbf{Algorithm} & \textbf{Correlation (r)} & \textbf{P-value} \\
+\textbf{Algorithm} & \textbf{Correlation Coefficient (r)} & \textbf{Statistical Significance (p-value)} \\
 \midrule
 Bubble Sort & 0.9615 & $1.53 \times 10^{-15}$ \\
 Heap Sort & 0.9816 & $1.68 \times 10^{-19}$ \\
@@ -208,31 +208,31 @@ Quick Sort (Med3) & 0.8789 & $1.63 \times 10^{-09}$ \\
 Selection Sort & 0.9996 & $8.77 \times 10^{-40}$ \\
 \bottomrule
 \end{tabular}
-\label{tab:correlation}
+\label{tab:statistical_correlation}
 \end{table}
 
-The near-perfect correlation for Insertion Sort ($r=1.0$) and Selection Sort ($r=0.9996$) indicates that their execution time is almost entirely driven by the number of comparisons. Radix Sort, being a non-comparison sort, shows a correlation of $0.9933$ with its internal operations, but these are not element comparisons in the traditional sense.
+The near-perfect correlation observed for Insertion Sort ($r=1.0$) and Selection Sort ($r=0.9996$) indicates that their computational duration is predominantly governed by comparison operation count. Radix Sort, implementing a non-comparison-based methodology, exhibits a correlation of $0.9933$ with its internal processing operations, though these do not represent traditional element-to-element comparisons.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.9\textwidth]{images/graphs/7_sorting_algo_comparisons/time_vs_comparisons_correlation.png}
-    \caption{Correlation between Execution Time and Number of Comparisons - Linear Scale}
-    \label{fig:correlation}
+    \caption{Statistical Correlation Analysis: Execution Duration vs Comparison Operation Count - Linear Scale}
+    \label{fig:statistical_correlation_plot}
 \end{figure}
 
-\section{Final Conclusion}
+\section{Research Conclusions and Implications}
 
-This study presents an experimental evaluation of various sorting algorithms under different input conditions, including random, sorted (best case), and reverse sorted (worst case) data. The results show strong agreement between \textbf{empirical observations and theoretical time complexities}, validating the importance of asymptotic analysis in predicting algorithm performance.
+This investigation presents a comprehensive empirical evaluation of diverse sorting algorithms under varying input configurations, encompassing randomized, pre-sorted (optimal case), and reverse-ordered (degraded case) datasets. The experimental findings demonstrate substantial concordance between \textbf{empirical performance measurements and theoretical computational complexity predictions}, thereby validating the significance of asymptotic analysis in forecasting algorithmic behavior.
 
-Algorithms with \textbf{$O(n^2)$ complexity}, such as Bubble Sort, Selection Sort, and Insertion Sort (average and worst cases), show rapid growth in execution time and comparisons as input size increases. While simple and effective for small datasets, they become \textbf{impractical for large inputs due to poor scalability}.
+Algorithms exhibiting \textbf{$O(n^2)$ complexity characteristics}, including Bubble Sort, Selection Sort, and Insertion Sort (in average and worst-case scenarios), display accelerated growth in both execution duration and comparison operations as input dimensions expand. Despite their implementation simplicity and effectiveness for limited datasets, these algorithms become \textbf{computationally infeasible for large-scale inputs due to inherent scalability limitations}.
 
-In contrast, \textbf{$O(n \log n)$ algorithms} like Merge Sort, Heap Sort, and Quick Sort demonstrate significantly better scalability and performance for large datasets. The results also highlight that \textbf{pivot selection in Quick Sort is critical}, as naive strategies perform poorly on sorted inputs while median or random pivot strategies maintain efficient performance.
+In contrast, \textbf{$O(n \log n)$ complexity algorithms} such as Merge Sort, Heap Sort, and Quick Sort manifest substantially enhanced scalability and performance characteristics for extensive dataset processing. The experimental results additionally emphasize that \textbf{pivot selection strategy in Quick Sort implementations is fundamentally crucial}, as naive methodologies demonstrate inferior performance with ordered inputs while median or randomized pivot approaches maintain computational efficiency.
 
-The study further shows that \textbf{input distribution significantly affects performance}. Adaptive algorithms such as Bubble Sort and Insertion Sort achieve linear-time behavior for sorted inputs, whereas non-adaptive algorithms like Selection Sort remain quadratic regardless of input order.
+The research further establishes that \textbf{input distribution patterns significantly influence algorithmic performance}. Adaptive algorithms including Bubble Sort and Insertion Sort achieve linear-time computational behavior for pre-sorted input sequences, whereas non-adaptive implementations like Selection Sort maintain quadratic complexity regardless of input ordering.
 
-Additionally, \textbf{non-comparison-based methods} such as Radix Sort exhibit near-linear performance and outperform comparison-based algorithms under suitable conditions.
+Furthermore, \textbf{non-comparison-based methodologies} such as Radix Sort demonstrate near-linear computational performance and surpass comparison-based algorithms under appropriate conditions.
 
-Overall, the findings confirm that \textbf{algorithm choice should depend on input size, data distribution, and application requirements}, and that asymptotic complexity remains a reliable indicator of performance despite practical factors such as implementation details and system overhead.
+Collectively, these findings confirm that \textbf{algorithm selection should be contingent upon input scale, data distribution characteristics, and application-specific requirements}, and that asymptotic complexity analysis remains a reliable predictor of practical performance despite implementation-specific factors and system-level overhead considerations.
 
 
 \end{document}
