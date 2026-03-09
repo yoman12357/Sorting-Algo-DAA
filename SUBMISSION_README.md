@@ -44,7 +44,7 @@ This package contains the source code and benchmarking tools used for the CS-253
 ### Terminal Output
 
 ```
-PS C:\Users\Appaji Dheeraj\OneDrive\Desktop\OS_Labs\Sorting-algorithms-benchmark> python .\benchmark.py
+PS C:\Users\Aryan Bokolia\Desktop\Sorting-algorithms-benchmark> python .\benchmark.py
 Compiling sorting_algorithms\bubble_sort.c...
 Successfully compiled sorting_algorithms\bubble_sort.c to executables\bubble_sort
 Compiling sorting_algorithms\heap_sort.c...
