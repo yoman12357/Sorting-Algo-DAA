@@ -7,236 +7,238 @@ import pandas as pd
 import numpy as np
 from scipy.stats import pearsonr
 
-# --- Configuration ---
-C_FILES = [
+# --- Configuration Parameters ---
+ALGORITHM_FILES = [
     "bubble_sort.c",
     "heap_sort.c",
     "insertion_sort.c",
     "merge_sort.c",
-    "quick_sort_median_of_three_pivot.c",  # Using median of three pivot
+    "quick_sort_median_of_three_pivot.c",
     "radix_sort.c",
     "selection_sort.c",
 ]
 
-# Quick Sort variants for analysis
-QUICK_SORT_VARIANTS = [
-    "quick_sort_first_pivot.c",  # Last element pivot
-    "quick_sort_median_of_three_pivot.c",  # Median of three pivot
-    "quick_sort_random_pivot.c",  # Random pivot
+# Quick Sort implementation variants for comparative analysis
+QUICKSORT_IMPLEMENTATIONS = [
+    "quick_sort_first_pivot.c",
+    "quick_sort_median_of_three_pivot.c",
+    "quick_sort_random_pivot.c",
 ]
 
-C_FILE_PATHS = [os.path.join("sorting_algorithms", f) for f in C_FILES]
-QUICK_SORT_PATHS = [os.path.join("sorting_algorithms", f) for f in QUICK_SORT_VARIANTS]
-EXECUTABLES_DIR = "executables"
-TEST_DATA_DIR = "test_data"
-OUTPUT_GRAPHS_DIR = "graphs"
-OUTPUT_7_ALGOS_DIR = os.path.join(OUTPUT_GRAPHS_DIR, "7_sorting_algo_comparisons")
-OUTPUT_QUICK_SORT_DIR = os.path.join(OUTPUT_GRAPHS_DIR, "quick_sort_analysis")
-OUTPUT_CSV_DIR = os.path.join(OUTPUT_GRAPHS_DIR, "csv_data")
-NUM_REPETITIONS = 7  # Number of times to run each experiment for averaging
-# The maximum input size to consider for plotting. Adjust if needed.
-MAX_PLOT_N = 100000 
+ALGORITHM_FILE_PATHS = [os.path.join("sorting_algorithms", f) for f in ALGORITHM_FILES]
+QUICKSORT_FILE_PATHS = [os.path.join("sorting_algorithms", f) for f in QUICKSORT_IMPLEMENTATIONS]
+BINARY_OUTPUT_DIR = "executables"
+DATASET_DIRECTORY = "test_data"
+VISUALIZATION_OUTPUT_DIR = "graphs"
+COMPARISON_CHARTS_DIR = os.path.join(VISUALIZATION_OUTPUT_DIR, "7_sorting_algo_comparisons")
+QUICKSORT_ANALYSIS_DIR = os.path.join(VISUALIZATION_OUTPUT_DIR, "quick_sort_analysis")
+CSV_EXPORT_DIR = os.path.join(VISUALIZATION_OUTPUT_DIR, "csv_data")
+EXPERIMENT_REPETITIONS = 7
+# Maximum dataset size for visualization plots
+VISUALIZATION_MAX_SIZE = 100000 
 
-# --- Helper Functions ---
+# --- Utility Functions ---
 
-def compile_c_code(c_file_path, output_executable_path):
-    """Compiles a C source file into an executable."""
-    print(f"Compiling {c_file_path}...")
+def build_executable(source_file_path, binary_output_path):
+    """Compiles C source code into executable binary."""
+    print(f"Building executable from {source_file_path}...")
     try:
         subprocess.run(
-            ["gcc", c_file_path, "-o", output_executable_path, "-Wl,--stack=268435456"],
+            ["gcc", source_file_path, "-o", binary_output_path, "-Wl,--stack=268435456"],
             check=True,
             capture_output=True,
             text=True
         )
-        print(f"Successfully compiled {c_file_path} to {output_executable_path}")
+        print(f"Successfully compiled {source_file_path} -> {binary_output_path}")
     except subprocess.CalledProcessError as e:
-        print(f"Error compiling {c_file_path}:")
+        print(f"Compilation failed for {source_file_path}:")
         print(f"Stdout: {e.stdout}")
         print(f"Stderr: {e.stderr}")
         exit(1)
 
-def read_test_data(filepath):
-    """Reads integers from a given test data file, one integer per line."""
-    with open(filepath, 'r') as f:
-        data = [int(line.strip()) for line in f if line.strip()] # Read all non-empty lines as integers
-    return data
+def load_dataset(file_path):
+    """Loads integer dataset from specified file, one integer per line."""
+    with open(file_path, 'r') as f:
+        dataset = [int(line.strip()) for line in f if line.strip()]
+    return dataset
 
-def run_benchmark(executable_path, data):
+def execute_performance_test(executable_path, test_dataset):
     """
-    Runs the compiled C program with the given data, reads timing from C code.
-    Input data is passed via stdin. Returns (time, comparisons).
-    Time is measured inside C code using clock_gettime(), not Python subprocess overhead.
+    Executes compiled sorting program with provided dataset and captures performance metrics.
+    Input is delivered via stdin. Returns tuple of (execution_time, comparison_count).
+    Timing measurements are performed within C code using clock_gettime().
     """
-    input_str = f"{len(data)}\n" + " ".join(map(str, data))
+    input_data = f"{len(test_dataset)}\n" + " ".join(map(str, test_dataset))
     
     try:
-        # Use subprocess.run to send input via stdin and capture stdout/stderr
-        process = subprocess.run(
+        process_result = subprocess.run(
             [executable_path],
-            input=input_str,
+            input=input_data,
             capture_output=True,
             text=True,
             check=True
         )
         
-        # Extract timing and comparison count from stderr
-        timing = float('inf')
-        comparisons = 0
-        stderr_lines = process.stderr.strip().split('\n')
-        for line in stderr_lines:
-            if line.startswith("TIME:"):
-                timing = float(line.split(":")[1].strip())
-            elif line.startswith("COMPARISONS:"):
-                comparisons = int(line.split(":")[1].strip())
+        # Parse performance metrics from stderr output
+        execution_time = float('inf')
+        comparison_operations = 0
+        stderr_output = process_result.stderr.strip().split('\n')
+        for output_line in stderr_output:
+            if output_line.startswith("TIME:"):
+                execution_time = float(output_line.split(":")[1].strip())
+            elif output_line.startswith("COMPARISONS:"):
+                comparison_operations = int(output_line.split(":")[1].strip())
         
-        return timing, comparisons
+        return execution_time, comparison_operations
     except subprocess.CalledProcessError as e:
-        print(f"Error running {executable_path} with data size {len(data)}:")
+        print(f"Execution failed for {executable_path} with dataset size {len(test_dataset)}:")
         print(f"Stdout: {e.stdout}")
         print(f"Stderr: {e.stderr}")
-        return float('inf'), 0  # Return infinity for failed runs
+        return float('inf'), 0
 
-def extract_n_and_type(filename):
-    """Extracts N and data type (random, sorted, reverse_sorted) from a filename."""
-    match = re.match(r"n_(\d+)_(\w+)\.txt", filename) # Corrected regex: \.txt instead of \\.txt
-    if match:
-        return int(match.group(1)), match.group(2)
+def parse_dataset_metadata(filename):
+    """Extracts dataset size and type information from filename pattern."""
+    pattern_match = re.match(r"n_(\d+)_(\w+)\.txt", filename)
+    if pattern_match:
+        return int(pattern_match.group(1)), pattern_match.group(2)
     return None, None
 
-def plot_results(results, plot_type, output_dir, metric="time"):
-    """Generates and saves a plot for a specific case (best, worst, average)."""
-    # ===== Linear Scale Plot =====
+def create_performance_visualizations(results_data, case_description, output_directory, measurement_type="time"):
+    """Generates and saves performance visualization plots for specific test cases."""
+    # Linear scale visualization
     plt.figure(figsize=(12, 7))
     
-    for algo_name, data_points in results.items():
-        # Sort data points by N for correct plotting
-        data_points.sort(key=lambda x: x[0])
-        ns = [dp[0] for dp in data_points if dp[0] <= MAX_PLOT_N]
-        values = [dp[1] for dp in data_points if dp[0] <= MAX_PLOT_N]
-        plt.plot(ns, values, marker='o', linestyle='-', label=algo_name, linewidth=2, markersize=6)
+    for algorithm_name, performance_points in results_data.items():
+        # Sort data points for proper plotting
+        performance_points.sort(key=lambda x: x[0])
+        dataset_sizes = [dp[0] for dp in performance_points if dp[0] <= VISUALIZATION_MAX_SIZE]
+        performance_values = [dp[1] for dp in performance_points if dp[0] <= VISUALIZATION_MAX_SIZE]
+        plt.plot(dataset_sizes, performance_values, marker='o', linestyle='-', 
+                label=algorithm_name, linewidth=2, markersize=6)
 
-    plt.xlabel("Input Size (n)", fontsize=11)
-    if metric == "time":
-        plt.ylabel("Average Execution Time (s)", fontsize=11)
-        plt.title(f"Sorting Algorithm Performance (Time): {plot_type} Case", fontsize=12, fontweight='bold')
+    plt.xlabel("Dataset Size (n)", fontsize=11)
+    if measurement_type == "time":
+        plt.ylabel("Mean Execution Time (s)", fontsize=11)
+        plt.title(f"Algorithm Performance Analysis (Time): {case_description}", fontsize=12, fontweight='bold')
     else:
-        plt.ylabel("Number of Comparisons", fontsize=11)
-        plt.title(f"Sorting Algorithm Performance (Comparisons): {plot_type} Case", fontsize=12, fontweight='bold')
+        plt.ylabel("Comparison Operations Count", fontsize=11)
+        plt.title(f"Algorithm Performance Analysis (Comparisons): {case_description}", fontsize=12, fontweight='bold')
     
     plt.legend(fontsize=10, loc='best')
     plt.grid(True, alpha=0.3)
-    plt.xscale('log')  # Use log scale for x-axis if N values span a wide range
+    plt.xscale('log')
     plt.tight_layout()
     
-    metric_suffix = "_time" if metric == "time" else "_comparisons"
-    output_path = os.path.join(output_dir, f"sorting_algorithms_{plot_type.lower().replace(' ', '_')}_case{metric_suffix}.png")
-    plt.savefig(output_path, dpi=150)
-    print(f"Generated plot: {output_path}")
+    metric_suffix = "_time" if measurement_type == "time" else "_comparisons"
+    output_filepath = os.path.join(output_directory, f"algorithm_performance_{case_description.lower().replace(' ', '_')}{metric_suffix}.png")
+    plt.savefig(output_filepath, dpi=150)
+    print(f"Generated visualization: {output_filepath}")
     plt.close()
     
-    # ===== Logarithmic Scale Plot (Y-axis) - For better visibility =====
+    # Logarithmic Scale Plot (Y-axis) - For better visibility
     plt.figure(figsize=(12, 7))
     
-    for algo_name, data_points in results.items():
-        # Sort data points by N for correct plotting
-        data_points.sort(key=lambda x: x[0])
-        ns = [dp[0] for dp in data_points if dp[0] <= MAX_PLOT_N]
-        values = [dp[1] for dp in data_points if dp[0] <= MAX_PLOT_N]
+    for algorithm_name, performance_points in results_data.items():
+        # Sort data points for proper plotting
+        performance_points.sort(key=lambda x: x[0])
+        dataset_sizes = [dp[0] for dp in performance_points if dp[0] <= VISUALIZATION_MAX_SIZE]
+        performance_values = [dp[1] for dp in performance_points if dp[0] <= VISUALIZATION_MAX_SIZE]
         # Filter out zero or negative values for log scale
-        filtered_ns = [n for n, v in zip(ns, values) if v > 0]
-        filtered_values = [v for v in values if v > 0]
+        filtered_sizes = [n for n, v in zip(dataset_sizes, performance_values) if v > 0]
+        filtered_values = [v for v in performance_values if v > 0]
         if filtered_values:
-            plt.plot(filtered_ns, filtered_values, marker='o', linestyle='-', label=algo_name, linewidth=2, markersize=6)
+            plt.plot(filtered_sizes, filtered_values, marker='o', linestyle='-', 
+                    label=algorithm_name, linewidth=2, markersize=6)
 
-    plt.xlabel("Input Size (n)", fontsize=11)
-    if metric == "time":
-        plt.ylabel("Average Execution Time (s) - Log Scale", fontsize=11)
-        plt.title(f"Sorting Algorithm Performance (Time) - Log Scale: {plot_type} Case", fontsize=12, fontweight='bold')
+    plt.xlabel("Dataset Size (n)", fontsize=11)
+    if measurement_type == "time":
+        plt.ylabel("Mean Execution Time (s) - Log Scale", fontsize=11)
+        plt.title(f"Algorithm Performance Analysis (Time) - Log Scale: {case_description}", fontsize=12, fontweight='bold')
     else:
-        plt.ylabel("Number of Comparisons - Log Scale", fontsize=11)
-        plt.title(f"Sorting Algorithm Performance (Comparisons) - Log Scale: {plot_type} Case", fontsize=12, fontweight='bold')
+        plt.ylabel("Comparison Operations Count - Log Scale", fontsize=11)
+        plt.title(f"Algorithm Performance Analysis (Comparisons) - Log Scale: {case_description}", fontsize=12, fontweight='bold')
     
     plt.legend(fontsize=10, loc='best')
     plt.grid(True, alpha=0.3, which='both')
     plt.xscale('log')
-    plt.yscale('log')  # Logarithmic scale on Y-axis for better visibility
+    plt.yscale('log')
     plt.tight_layout()
     
     # Save with _log_scale suffix
-    output_path_log = os.path.join(output_dir, f"sorting_algorithms_{plot_type.lower().replace(' ', '_')}_case{metric_suffix}_log_scale.png")
-    plt.savefig(output_path_log, dpi=150)
-    print(f"Generated plot: {output_path_log}")
+    log_output_filepath = os.path.join(output_directory, f"algorithm_performance_{case_description.lower().replace(' ', '_')}{metric_suffix}_log_scale.png")
+    plt.savefig(log_output_filepath, dpi=150)
+    print(f"Generated logarithmic visualization: {log_output_filepath}")
     plt.close()
 
-def plot_correlation(results, output_dir):
-    """Generate correlation plots between time and comparisons for each algorithm."""
+def generate_correlation_analysis(performance_data, output_directory):
+    """Creates correlation analysis plots between execution time and comparison operations."""
     plt.figure(figsize=(14, 10))
     
-    num_algos = len(results)
-    rows = (num_algos + 1) // 2
-    cols = 2
+    algorithm_count = len(performance_data)
+    subplot_rows = (algorithm_count + 1) // 2
+    subplot_cols = 2
     
-    for idx, (algo_name, data_points) in enumerate(results.items(), 1):
-        plt.subplot(rows, cols, idx)
+    for subplot_index, (algorithm_name, data_points) in enumerate(performance_data.items(), 1):
+        plt.subplot(subplot_rows, subplot_cols, subplot_index)
         
-        # Extract time and comparisons data
-        times = [dp[1] for dp in data_points if dp[1] != float('inf')]
-        comparisons = [dp[2] for dp in data_points if dp[1] != float('inf')]
+        # Extract timing and comparison metrics
+        execution_times = [dp[1] for dp in data_points if dp[1] != float('inf')]
+        comparison_counts = [dp[2] for dp in data_points if dp[1] != float('inf')]
         
-        if len(times) > 1 and len(comparisons) > 1:
-            # Calculate correlation coefficient
-            corr, p_value = pearsonr(comparisons, times)
+        if len(execution_times) > 1 and len(comparison_counts) > 1:
+            # Calculate statistical correlation
+            correlation_coeff, p_value = pearsonr(comparison_counts, execution_times)
             
-            # Plot scatter with trend line
-            plt.scatter(comparisons, times, alpha=0.6, s=100, color='steelblue', edgecolors='black', linewidth=0.5)
+            # Create scatter plot with regression line
+            plt.scatter(comparison_counts, execution_times, alpha=0.6, s=100, 
+                       color='steelblue', edgecolors='black', linewidth=0.5)
             
-            # Add trend line
-            z = np.polyfit(comparisons, times, 1)
-            p = np.poly1d(z)
-            x_line = np.linspace(min(comparisons), max(comparisons), 100)
-            plt.plot(x_line, p(x_line), "r--", alpha=0.8, linewidth=2, label='Trend Line')
+            # Add linear regression trend line
+            regression_params = np.polyfit(comparison_counts, execution_times, 1)
+            regression_function = np.poly1d(regression_params)
+            x_range = np.linspace(min(comparison_counts), max(comparison_counts), 100)
+            plt.plot(x_range, regression_function(x_range), "r--", alpha=0.8, 
+                    linewidth=2, label='Regression Line')
             
-            plt.xlabel("Number of Comparisons", fontsize=10)
+            plt.xlabel("Comparison Operations Count", fontsize=10)
             plt.ylabel("Execution Time (s)", fontsize=10)
-            title = f"{algo_name}\nCorrelation: {corr:.4f} (p={p_value:.4e})"
-            plt.title(title, fontsize=10, fontweight='bold')
+            subplot_title = f"{algorithm_name}\nCorrelation: {correlation_coeff:.4f} (p={p_value:.4e})"
+            plt.title(subplot_title, fontsize=10, fontweight='bold')
             plt.grid(True, alpha=0.3)
-            # Add legend
             plt.legend(fontsize=9, loc='best')
     
     plt.tight_layout()
-    output_path = os.path.join(output_dir, "time_vs_comparisons_correlation.png")
-    plt.savefig(output_path, dpi=150)
-    print(f"Generated correlation plot: {output_path}")
+    correlation_output_path = os.path.join(output_directory, "time_vs_comparisons_correlation.png")
+    plt.savefig(correlation_output_path, dpi=150)
+    print(f"Generated correlation analysis: {correlation_output_path}")
     plt.close()
 
 # --- Main Execution ---
 if __name__ == "__main__":
     # Create necessary directories
-    os.makedirs(EXECUTABLES_DIR, exist_ok=True)
-    os.makedirs(OUTPUT_GRAPHS_DIR, exist_ok=True)
-    os.makedirs(OUTPUT_7_ALGOS_DIR, exist_ok=True)
-    os.makedirs(OUTPUT_QUICK_SORT_DIR, exist_ok=True)
-    os.makedirs(OUTPUT_CSV_DIR, exist_ok=True)
+    os.makedirs(BINARY_OUTPUT_DIR, exist_ok=True)
+    os.makedirs(VISUALIZATION_OUTPUT_DIR, exist_ok=True)
+    os.makedirs(COMPARISON_CHARTS_DIR, exist_ok=True)
+    os.makedirs(QUICKSORT_ANALYSIS_DIR, exist_ok=True)
+    os.makedirs(CSV_EXPORT_DIR, exist_ok=True)
 
-    executables = {}
-    for c_file in C_FILES:
-        base_name = os.path.splitext(c_file)[0]
-        executable_path = os.path.join(EXECUTABLES_DIR, base_name)
-        compile_c_code(os.path.join("sorting_algorithms", c_file), executable_path)
-        executables[base_name] = executable_path
+    algorithm_executables = {}
+    for source_file in ALGORITHM_FILES:
+        algorithm_name = os.path.splitext(source_file)[0]
+        executable_path = os.path.join(BINARY_OUTPUT_DIR, algorithm_name)
+        build_executable(os.path.join("sorting_algorithms", source_file), executable_path)
+        algorithm_executables[algorithm_name] = executable_path
     
-    # Compile quick sort variants
-    quick_sort_executables = {}
-    for c_file in QUICK_SORT_VARIANTS:
-        base_name = os.path.splitext(c_file)[0]
-        executable_path = os.path.join(EXECUTABLES_DIR, base_name)
-        compile_c_code(os.path.join("sorting_algorithms", c_file), executable_path)
-        quick_sort_executables[base_name] = executable_path
+    # Build quick sort variant executables
+    quicksort_executables = {}
+    for quicksort_file in QUICKSORT_IMPLEMENTATIONS:
+        algorithm_name = os.path.splitext(quicksort_file)[0]
+        executable_path = os.path.join(BINARY_OUTPUT_DIR, algorithm_name)
+        build_executable(os.path.join("sorting_algorithms", quicksort_file), executable_path)
+        quicksort_executables[algorithm_name] = executable_path
 
-    # Data structure: {algo: {data_type: [(n, time, comparisons), ...]}}
-    all_results = {
+    # Performance data structure: {algorithm: {data_type: [(size, time, comparisons), ...]}}
+    algorithm_performance_data = {
         "bubble_sort": {"random": [], "sorted": [], "reverse_sorted": []},
         "heap_sort": {"random": [], "sorted": [], "reverse_sorted": []},
         "insertion_sort": {"random": [], "sorted": [], "reverse_sorted": []},
@@ -246,254 +248,254 @@ if __name__ == "__main__":
         "selection_sort": {"random": [], "sorted": [], "reverse_sorted": []},
     }
     
-    # Results for quick sort variants analysis
-    quick_sort_results = {
+    # Quick sort variant performance data
+    quicksort_performance_data = {
         "quick_sort_first_pivot": {"random": [], "sorted": [], "reverse_sorted": []},
         "quick_sort_median_of_three_pivot": {"random": [], "sorted": [], "reverse_sorted": []},
         "quick_sort_random_pivot": {"random": [], "sorted": [], "reverse_sorted": []},
     }
 
-    # Get all test data files
-    test_data_files = [f for f in os.listdir(TEST_DATA_DIR) if f.endswith(".txt")]
-    test_data_files.sort(key=lambda x: (extract_n_and_type(x)[0], extract_n_and_type(x)[1]))
+    # Retrieve all dataset files
+    dataset_files = [f for f in os.listdir(DATASET_DIRECTORY) if f.endswith(".txt")]
+    dataset_files.sort(key=lambda x: (parse_dataset_metadata(x)[0], parse_dataset_metadata(x)[1]))
 
-    print("\nStarting benchmarking...")
-    for data_file in test_data_files:
-        n, data_type = extract_n_and_type(data_file)
-        if n is None:
+    print("\nInitiating performance evaluation...")
+    for dataset_file in dataset_files:
+        dataset_size, data_category = parse_dataset_metadata(dataset_file)
+        if dataset_size is None:
             continue
         
-        data_filepath = os.path.join(TEST_DATA_DIR, data_file)
-        original_data = read_test_data(data_filepath)
+        dataset_path = os.path.join(DATASET_DIRECTORY, dataset_file)
+        source_data = load_dataset(dataset_path)
         
-        print(f"Benchmarking N={n}, Type={data_type}...")
+        print(f"Evaluating dataset size={dataset_size}, category={data_category}...")
 
-        for algo_base_name, executable_path in executables.items():
-            total_time = 0
-            total_comparisons = 0
-            for _ in range(NUM_REPETITIONS):
-                # Pass a copy of the data because C program might modify it
-                time_taken, comparisons = run_benchmark(executable_path, list(original_data))
-                total_time += time_taken
-                total_comparisons += comparisons
+        for algorithm_identifier, executable_path in algorithm_executables.items():
+            cumulative_time = 0
+            cumulative_comparisons = 0
+            for iteration in range(EXPERIMENT_REPETITIONS):
+                # Provide data copy to prevent modification by C program
+                execution_time, comparison_count = execute_performance_test(executable_path, list(source_data))
+                cumulative_time += execution_time
+                cumulative_comparisons += comparison_count
             
-            avg_time = total_time / NUM_REPETITIONS
-            avg_comparisons = total_comparisons / NUM_REPETITIONS
-            print(f"  {algo_base_name}: Time = {avg_time:.6f} s, Comparisons = {avg_comparisons:.0f}")
+            mean_time = cumulative_time / EXPERIMENT_REPETITIONS
+            mean_comparisons = cumulative_comparisons / EXPERIMENT_REPETITIONS
+            print(f"  {algorithm_identifier}: Time = {mean_time:.6f} s, Comparisons = {mean_comparisons:.0f}")
             
-            # Store results as (n, time, comparisons)
-            all_results[algo_base_name][data_type].append((n, avg_time, avg_comparisons))
+            # Store performance data as (size, time, comparisons)
+            algorithm_performance_data[algorithm_identifier][data_category].append((dataset_size, mean_time, mean_comparisons))
         
-        # Also benchmark quick sort variants separately
-        for qs_variant, qs_executable_path in quick_sort_executables.items():
-            total_time = 0
-            total_comparisons = 0
-            for _ in range(NUM_REPETITIONS):
-                time_taken, comparisons = run_benchmark(qs_executable_path, list(original_data))
-                total_time += time_taken
-                total_comparisons += comparisons
+        # Evaluate quick sort variants separately
+        for quicksort_variant, quicksort_executable_path in quicksort_executables.items():
+            cumulative_time = 0
+            cumulative_comparisons = 0
+            for iteration in range(EXPERIMENT_REPETITIONS):
+                execution_time, comparison_count = execute_performance_test(quicksort_executable_path, list(source_data))
+                cumulative_time += execution_time
+                cumulative_comparisons += comparison_count
             
-            avg_time = total_time / NUM_REPETITIONS
-            avg_comparisons = total_comparisons / NUM_REPETITIONS
-            print(f"  {qs_variant}: Time = {avg_time:.6f} s, Comparisons = {avg_comparisons:.0f}")
+            mean_time = cumulative_time / EXPERIMENT_REPETITIONS
+            mean_comparisons = cumulative_comparisons / EXPERIMENT_REPETITIONS
+            print(f"  {quicksort_variant}: Time = {mean_time:.6f} s, Comparisons = {mean_comparisons:.0f}")
             
-            quick_sort_results[qs_variant][data_type].append((n, avg_time, avg_comparisons))
+            quicksort_performance_data[quicksort_variant][data_category].append((dataset_size, mean_time, mean_comparisons))
 
-    print("\nBenchmarking complete. Generating plots...")
+    print("\nPerformance evaluation completed. Generating visualizations...")
 
-    # --- Plotting ---
-    # Prepare plot data for time
-    avg_case_time = {}
+    # --- Visualization Generation ---
+    # Prepare time-based visualization data
+    average_case_time = {}
     worst_case_time = {}
     best_case_time = {}
     
-    # Prepare plot data for comparisons
-    avg_case_comp = {}
-    worst_case_comp = {}
-    best_case_comp = {}
+    # Prepare comparison-based visualization data
+    average_case_comparisons = {}
+    worst_case_comparisons = {}
+    best_case_comparisons = {}
     
     # Prepare data for correlation analysis
-    correlation_data = {}
+    correlation_analysis_data = {}
     
-    for algo, types in all_results.items():
+    for algorithm_key, data_categories in algorithm_performance_data.items():
         # Format algorithm name for display
-        display_name = algo.replace('_', ' ').title()
+        display_name = algorithm_key.replace('_', ' ').title()
         if "Quick Sort Median Of Three Pivot" in display_name:
             display_name = "Quick Sort (Median of Three)"
         
-        # Time plots - extract (n, time)
-        avg_case_time[display_name] = [(n, t) for n, t, c in types["random"]]
-        worst_case_time[display_name] = [(n, t) for n, t, c in types["reverse_sorted"]]
-        best_case_time[display_name] = [(n, t) for n, t, c in types["sorted"]]
+        # Time-based plots - extract (size, time)
+        average_case_time[display_name] = [(size, time_val) for size, time_val, comp_count in data_categories["random"]]
+        worst_case_time[display_name] = [(size, time_val) for size, time_val, comp_count in data_categories["reverse_sorted"]]
+        best_case_time[display_name] = [(size, time_val) for size, time_val, comp_count in data_categories["sorted"]]
         
-        # Comparison plots - extract (n, comparisons)
-        avg_case_comp[display_name] = [(n, c) for n, t, c in types["random"]]
-        worst_case_comp[display_name] = [(n, c) for n, t, c in types["reverse_sorted"]]
-        best_case_comp[display_name] = [(n, c) for n, t, c in types["sorted"]]
+        # Comparison-based plots - extract (size, comparisons)
+        average_case_comparisons[display_name] = [(size, comp_count) for size, time_val, comp_count in data_categories["random"]]
+        worst_case_comparisons[display_name] = [(size, comp_count) for size, time_val, comp_count in data_categories["reverse_sorted"]]
+        best_case_comparisons[display_name] = [(size, comp_count) for size, time_val, comp_count in data_categories["sorted"]]
         
-        # Correlation data - combine all cases, extract (n, time, comparisons)
-        all_cases = types["random"] + types["sorted"] + types["reverse_sorted"]
-        correlation_data[display_name] = all_cases
+        # Correlation data - combine all categories, extract (size, time, comparisons)
+        all_categories_combined = data_categories["random"] + data_categories["sorted"] + data_categories["reverse_sorted"]
+        correlation_analysis_data[display_name] = all_categories_combined
     
-    # Generate Time vs N plots in 7_sorting_algo_comparisons folder
-    plot_results(avg_case_time, "Average Case (Random Input)", OUTPUT_7_ALGOS_DIR, metric="time")
-    plot_results(worst_case_time, "Worst Case (Reverse Sorted Input)", OUTPUT_7_ALGOS_DIR, metric="time")
-    plot_results(best_case_time, "Best Case (Sorted Input)", OUTPUT_7_ALGOS_DIR, metric="time")
+    # Generate Time vs Size plots in comparison charts directory
+    create_performance_visualizations(average_case_time, "Average Case (Random Input)", COMPARISON_CHARTS_DIR, measurement_type="time")
+    create_performance_visualizations(worst_case_time, "Worst Case (Reverse Sorted Input)", COMPARISON_CHARTS_DIR, measurement_type="time")
+    create_performance_visualizations(best_case_time, "Best Case (Sorted Input)", COMPARISON_CHARTS_DIR, measurement_type="time")
     
-    # Generate Comparisons vs N plots in 7_sorting_algo_comparisons folder
-    plot_results(avg_case_comp, "Average Case (Random Input)", OUTPUT_7_ALGOS_DIR, metric="comparisons")
-    plot_results(worst_case_comp, "Worst Case (Reverse Sorted Input)", OUTPUT_7_ALGOS_DIR, metric="comparisons")
-    plot_results(best_case_comp, "Best Case (Sorted Input)", OUTPUT_7_ALGOS_DIR, metric="comparisons")
+    # Generate Comparisons vs Size plots in comparison charts directory
+    create_performance_visualizations(average_case_comparisons, "Average Case (Random Input)", COMPARISON_CHARTS_DIR, measurement_type="comparisons")
+    create_performance_visualizations(worst_case_comparisons, "Worst Case (Reverse Sorted Input)", COMPARISON_CHARTS_DIR, measurement_type="comparisons")
+    create_performance_visualizations(best_case_comparisons, "Best Case (Sorted Input)", COMPARISON_CHARTS_DIR, measurement_type="comparisons")
     
-    # Generate correlation plot for 7 algorithms in 7_sorting_algo_comparisons folder
-    plot_correlation(correlation_data, OUTPUT_7_ALGOS_DIR)
+    # Generate correlation analysis for main algorithms
+    generate_correlation_analysis(correlation_analysis_data, COMPARISON_CHARTS_DIR)
     
     # --- Quick Sort Variants Analysis ---
-    print("\nGenerating QuickSort variant plots...")
+    print("\nGenerating QuickSort variant analysis...")
     
-    # Prepare quick sort variant plot data
-    qs_avg_case_time = {}
-    qs_worst_case_time = {}
-    qs_best_case_time = {}
+    # Prepare quick sort variant visualization data
+    qs_average_time = {}
+    qs_worst_time = {}
+    qs_best_time = {}
     
-    qs_avg_case_comp = {}
-    qs_worst_case_comp = {}
-    qs_best_case_comp = {}
+    qs_average_comparisons = {}
+    qs_worst_comparisons = {}
+    qs_best_comparisons = {}
     
-    for qs_algo, qs_types in quick_sort_results.items():
+    for quicksort_algorithm, quicksort_categories in quicksort_performance_data.items():
         # Format algorithm name for display
-        display_name = qs_algo.replace('_', ' ').title()
+        display_name = quicksort_algorithm.replace('_', ' ').title()
         if "Median Of Three" in display_name:
             display_name = "Quick Sort (Median of Three)"
-        elif qs_algo == "quick_sort_first_pivot":
+        elif quicksort_algorithm == "quick_sort_first_pivot":
             display_name = "Quick Sort (First Element Pivot)"
         elif "Random" in display_name:
             display_name = "Quick Sort (Random Pivot)"
         
-        # Time plots
-        qs_avg_case_time[display_name] = [(n, t) for n, t, c in qs_types["random"]]
-        qs_worst_case_time[display_name] = [(n, t) for n, t, c in qs_types["reverse_sorted"]]
-        qs_best_case_time[display_name] = [(n, t) for n, t, c in qs_types["sorted"]]
+        # Time-based visualizations
+        qs_average_time[display_name] = [(size, time_val) for size, time_val, comp_count in quicksort_categories["random"]]
+        qs_worst_time[display_name] = [(size, time_val) for size, time_val, comp_count in quicksort_categories["reverse_sorted"]]
+        qs_best_time[display_name] = [(size, time_val) for size, time_val, comp_count in quicksort_categories["sorted"]]
         
-        # Comparison plots
-        qs_avg_case_comp[display_name] = [(n, c) for n, t, c in qs_types["random"]]
-        qs_worst_case_comp[display_name] = [(n, c) for n, t, c in qs_types["reverse_sorted"]]
-        qs_best_case_comp[display_name] = [(n, c) for n, t, c in qs_types["sorted"]]
+        # Comparison-based visualizations
+        qs_average_comparisons[display_name] = [(size, comp_count) for size, time_val, comp_count in quicksort_categories["random"]]
+        qs_worst_comparisons[display_name] = [(size, comp_count) for size, time_val, comp_count in quicksort_categories["reverse_sorted"]]
+        qs_best_comparisons[display_name] = [(size, comp_count) for size, time_val, comp_count in quicksort_categories["sorted"]]
     
-    # Generate Quick Sort Time vs N plots
-    plot_results(qs_avg_case_time, "Average Case (Random Input)", OUTPUT_QUICK_SORT_DIR, metric="time")
-    plot_results(qs_worst_case_time, "Worst Case (Reverse Sorted Input)", OUTPUT_QUICK_SORT_DIR, metric="time")
-    plot_results(qs_best_case_time, "Best Case (Sorted Input)", OUTPUT_QUICK_SORT_DIR, metric="time")
+    # Generate Quick Sort Time vs Size visualizations
+    create_performance_visualizations(qs_average_time, "Average Case (Random Input)", QUICKSORT_ANALYSIS_DIR, measurement_type="time")
+    create_performance_visualizations(qs_worst_time, "Worst Case (Reverse Sorted Input)", QUICKSORT_ANALYSIS_DIR, measurement_type="time")
+    create_performance_visualizations(qs_best_time, "Best Case (Sorted Input)", QUICKSORT_ANALYSIS_DIR, measurement_type="time")
     
-    # Generate Quick Sort Comparisons vs N plots
-    plot_results(qs_avg_case_comp, "Average Case (Random Input)", OUTPUT_QUICK_SORT_DIR, metric="comparisons")
-    plot_results(qs_worst_case_comp, "Worst Case (Reverse Sorted Input)", OUTPUT_QUICK_SORT_DIR, metric="comparisons")
-    plot_results(qs_best_case_comp, "Best Case (Sorted Input)", OUTPUT_QUICK_SORT_DIR, metric="comparisons")
+    # Generate Quick Sort Comparisons vs Size visualizations
+    create_performance_visualizations(qs_average_comparisons, "Average Case (Random Input)", QUICKSORT_ANALYSIS_DIR, measurement_type="comparisons")
+    create_performance_visualizations(qs_worst_comparisons, "Worst Case (Reverse Sorted Input)", QUICKSORT_ANALYSIS_DIR, measurement_type="comparisons")
+    create_performance_visualizations(qs_best_comparisons, "Best Case (Sorted Input)", QUICKSORT_ANALYSIS_DIR, measurement_type="comparisons")
     
     # Prepare correlation data for quick sort variants
-    qs_correlation_data = {}
-    for qs_algo, qs_types in quick_sort_results.items():
-        display_name = qs_algo.replace('_', ' ').title()
+    quicksort_correlation_data = {}
+    for quicksort_algorithm, quicksort_categories in quicksort_performance_data.items():
+        display_name = quicksort_algorithm.replace('_', ' ').title()
         if "Median Of Three" in display_name:
             display_name = "Quick Sort (Median of Three)"
-        elif qs_algo == "quick_sort_first_pivot":
+        elif quicksort_algorithm == "quick_sort_first_pivot":
             display_name = "Quick Sort (First Element Pivot)"
         elif "Random" in display_name:
             display_name = "Quick Sort (Random Pivot)"
         
-        # Correlation data - combine all cases
-        all_cases = qs_types["random"] + qs_types["sorted"] + qs_types["reverse_sorted"]
-        qs_correlation_data[display_name] = all_cases
+        # Correlation data - combine all categories
+        all_categories_combined = quicksort_categories["random"] + quicksort_categories["sorted"] + quicksort_categories["reverse_sorted"]
+        quicksort_correlation_data[display_name] = all_categories_combined
     
-    # Generate correlation plot for quick sort variants
-    plot_correlation(qs_correlation_data, OUTPUT_QUICK_SORT_DIR)
+    # Generate correlation analysis for quick sort variants
+    generate_correlation_analysis(quicksort_correlation_data, QUICKSORT_ANALYSIS_DIR)
 
-    print("\nAll plots generated successfully.")
-    print(f"Results are in the '{OUTPUT_GRAPHS_DIR}' directory.")
-    print(f"  - 7 sorting algorithm comparisons: '{OUTPUT_7_ALGOS_DIR}'")
-    print(f"  - Quick sort analysis: '{OUTPUT_QUICK_SORT_DIR}'")
-    print(f"  - CSV data: '{OUTPUT_CSV_DIR}'")
+    print("\nAll visualizations generated successfully.")
+    print(f"Results available in '{VISUALIZATION_OUTPUT_DIR}' directory.")
+    print(f"  - Algorithm comparisons: '{COMPARISON_CHARTS_DIR}'")
+    print(f"  - Quick sort analysis: '{QUICKSORT_ANALYSIS_DIR}'")
+    print(f"  - CSV data exports: '{CSV_EXPORT_DIR}'")
     
-    print("\n--- Benchmarking Methodology ---")
-    print(f"Each experiment was repeated {NUM_REPETITIONS} times, and the average execution time is reported.")
-    print("Timing mechanism: Python's `time.perf_counter()` for high-resolution timing.")
-    print("Comparison counting: Instrumented C code tracks all element comparisons.")
-    print("Input selection: Pre-generated test data from the 'test_data/' directory was used.")
-    print("Same inputs were used for all sorting algorithms to ensure a fair comparison.")
-    print("\nNote on Best/Worst Case Definitions:")
-    print("  - Average Case: Represented by 'random' input data.")
-    print("  - Worst Case: Represented by 'reverse_sorted' input data.")
-    print("  - Best Case: Represented by 'sorted' input data.")
-    print("\nCorrelation Analysis:")
-    print("  The correlation plots show the relationship between the number of comparisons")
-    print("  and execution time. A high correlation (close to 1.0) indicates that comparisons")
-    print("  are a strong predictor of execution time for that algorithm.")
-
-    # --- Generate Table ---
-    print("\n--- Benchmarking Results Table ---")
-    table_data = []
-    for algo_key, types_data in all_results.items():
-        # Format algorithm name
-        algo_name = algo_key.replace('_', ' ').title()
-        if "Quick Sort Median Of Three Pivot" in algo_name:
-            algo_name = "Quick Sort (Median of Three)"
+    print("\n--- Experimental Methodology ---")
+    print(f"Each test configuration executed {EXPERIMENT_REPETITIONS} times, reporting mean execution time.")
+    print("Timing mechanism: High-resolution Python `time.perf_counter()` measurements.")
+    print("Comparison tracking: Instrumented C code monitors all element comparisons.")
+    print("Dataset selection: Pre-generated evaluation data from '{DATASET_DIRECTORY}/' utilized.")
+    print("Consistent inputs applied across all algorithms for equitable performance comparison.")
+    print("\nBest/Worst Case Classification:")
+    print("  - Average Case: Represented by randomized input distributions.")
+    print("  - Worst Case: Represented by reverse-sorted input sequences.")
+    print("  - Best Case: Represented by pre-sorted input sequences.")
+    print("\nCorrelation Analysis Interpretation:")
+    print("  Correlation visualizations illustrate the relationship between comparison operations")
+    print("  and execution duration. High correlation (approaching 1.0) indicates comparison count")
+    print("  strongly predicts execution time for the respective algorithm.")
+    
+    # --- Performance Results Table ---
+    print("\n--- Performance Evaluation Results ---")
+    results_table_data = []
+    for algorithm_key, category_data in algorithm_performance_data.items():
+        # Format algorithm name for display
+        formatted_algorithm_name = algorithm_key.replace('_', ' ').title()
+        if "Quick Sort Median Of Three Pivot" in formatted_algorithm_name:
+            formatted_algorithm_name = "Quick Sort (Median of Three)"
         
-        for data_type, results_list in types_data.items():
-            for n, avg_time, avg_comparisons in results_list:
-                table_data.append({
-                    "Algorithm": algo_name,
-                    "Input Type": data_type.replace('_', ' ').title(),
-                    "Input Size (N)": n,
-                    "Average Time (s)": f"{avg_time:.6f}" if avg_time != float('inf') else "Crashed/Timeout",
-                    "Average Comparisons": f"{avg_comparisons:.0f}" if avg_time != float('inf') else "N/A"
+        for data_category, performance_results in category_data.items():
+            for dataset_size, mean_time, mean_comparisons in performance_results:
+                results_table_data.append({
+                    "Algorithm": formatted_algorithm_name,
+                    "Input Type": data_category.replace('_', ' ').title(),
+                    "Dataset Size (N)": dataset_size,
+                    "Mean Execution Time (s)": f"{mean_time:.6f}" if mean_time != float('inf') else "Crashed/Timeout",
+                    "Mean Comparisons": f"{mean_comparisons:.0f}" if mean_time != float('inf') else "N/A"
                 })
     
-    df = pd.DataFrame(table_data)
-    df_sorted = df.sort_values(by=["Input Size (N)", "Input Type", "Algorithm"])
-    print(df_sorted.to_string(index=False))
+    performance_dataframe = pd.DataFrame(results_table_data)
+    sorted_dataframe = performance_dataframe.sort_values(by=["Dataset Size (N)", "Input Type", "Algorithm"])
+    print(sorted_dataframe.to_string(index=False))
 
-    # Save to CSV in csv_data folder
-    csv_output_path = os.path.join(OUTPUT_CSV_DIR, "all_sorting_benchmark_results.csv")
-    df_sorted.to_csv(csv_output_path, index=False)
-    print(f"\nFull results table saved to {csv_output_path}")
+    # Export results to CSV
+    csv_export_path = os.path.join(CSV_EXPORT_DIR, "comprehensive_sorting_performance_results.csv")
+    sorted_dataframe.to_csv(csv_export_path, index=False)
+    print(f"\nComplete results table exported to {csv_export_path}")
     
-    # --- Correlation Analysis Summary ---
-    print("\n--- Correlation Analysis Summary ---")
+    # --- Statistical Correlation Summary ---
+    print("\n--- Statistical Correlation Analysis ---")
     print("Algorithm                           | Correlation (r) | P-value")
     print("-" * 70)
-    for algo_name, data_points in correlation_data.items():
-        times = [dp[1] for dp in data_points if dp[1] != float('inf')]
-        comparisons = [dp[2] for dp in data_points if dp[1] != float('inf')]
+    for algorithm_name, performance_points in correlation_analysis_data.items():
+        execution_times = [dp[1] for dp in performance_points if dp[1] != float('inf')]
+        comparison_operations = [dp[2] for dp in performance_points if dp[1] != float('inf')]
         
-        if len(times) > 1 and len(comparisons) > 1:
-            corr, p_value = pearsonr(comparisons, times)
-            print(f"{algo_name:<35} | {corr:>15.4f} | {p_value:.4e}")
+        if len(execution_times) > 1 and len(comparison_operations) > 1:
+            correlation_coefficient, statistical_p_value = pearsonr(comparison_operations, execution_times)
+            print(f"{algorithm_name:<35} | {correlation_coefficient:>15.4f} | {statistical_p_value:.4e}")
     
-    print("\nInterpretation:")
-    print("  r close to 1.0: Strong positive correlation (more comparisons → more time)")
-    print("  r close to 0.0: Weak/no correlation")
+    print("\nStatistical Interpretation:")
+    print("  r ≈ 1.0: Strong positive correlation (increased comparisons → increased time)")
+    print("  r ≈ 0.0: Weak or negligible correlation")
     print("  p-value < 0.05: Statistically significant correlation")
     
-    # --- Important Notes ---
+    # --- Critical Performance Notes ---
     print("\n" + "="*80)
-    print("IMPORTANT NOTES ON RESULTS")
+    print("CRITICAL PERFORMANCE EVALUATION NOTES")
     print("="*80)
     
-    print("\n⚠️  TIMING MEASUREMENT:")
-    print("  - Timing is measured INSIDE C code using clock_gettime(CLOCK_MONOTONIC)")
-    print("  - This eliminates Python subprocess overhead from the measurements")
-    print("  - Results are now accurate for actual algorithm performance")
+    print("\n⚠️  TIMING MEASUREMENT PROTOCOL:")
+    print("  - Execution timing measured within C code using clock_gettime(CLOCK_MONOTONIC)")
+    print("  - This approach eliminates Python subprocess overhead from measurements")
+    print("  - Results accurately reflect actual algorithmic performance characteristics")
     
-    print("\n⚠️  RADIX SORT 'COMPARISONS' NOTE:")
-    print("  - Radix sort is a NON-COMPARATIVE sorting algorithm")
-    print("  - It does NOT use element comparisons (like other algorithms)")
-    print("  - The 'comparisons' count represents operations in getMax() function")
-    print("  - This value (~n) is NOT comparable to other algorithms' comparisons")
-    print("  - Use TIME metric, not COMPARISONS, to evaluate radix sort performance")
+    print("\n⚠️  RADIX SORT COMPARISON METRIC NOTE:")
+    print("  - Radix sort implements a NON-COMPARATIVE sorting paradigm")
+    print("  - Algorithm does not perform element-to-element comparisons (unlike other methods)")
+    print("  - 'Comparisons' metric represents getMax() function operations (~n)")
+    print("  - This value is NOT directly comparable to other algorithms' comparison counts")
+    print("  - Utilize TIME metric rather than COMPARISONS for radix sort performance evaluation")
     
-    print("\n✓ EXPECTED BEHAVIOR:")
-    print("  - O(n²) algorithms: Bubble, Insertion, Selection Sort")
-    print("  - O(n log n) algorithms: Heap, Merge, Quick Sort")
-    print("  - O(n+k) algorithm: Radix Sort (where k is key range)")
-    print("  - Best case optimized: Bubble & Insertion sort show O(n) for sorted input")
+    print("\n✓ EXPECTED ALGORITHMIC BEHAVIOR:")
+    print("  - O(n²) complexity: Bubble, Insertion, Selection Sort algorithms")
+    print("  - O(n log n) complexity: Heap, Merge, Quick Sort algorithms")
+    print("  - O(n+k) complexity: Radix Sort (where k represents key range)")
+    print("  - Optimized best-case: Bubble & Insertion sort demonstrate O(n) for sorted inputs")
     print("="*80)

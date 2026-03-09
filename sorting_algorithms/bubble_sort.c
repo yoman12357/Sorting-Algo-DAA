@@ -1,70 +1,96 @@
+/*
+ * Bubble Sort Implementation
+ * This sorting algorithm repeatedly steps through the list,
+ * compares adjacent elements and swaps them if they are in the wrong order.
+ * The pass through the list is repeated until no swaps are needed.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <stdint.h>
 
-long long comparison_count = 0;
-struct timespec start_time, end_time;
+// Global variables for performance tracking
+static long long element_comparisons = 0;
+static struct timespec timing_start, timing_end;
 
-double get_elapsed_time(struct timespec start, struct timespec end) {
-    return (end.tv_sec - start.tv_sec) + (end.tv_nsec - start.tv_nsec) / 1e9;
+// Function to calculate elapsed time in seconds
+double calculate_execution_duration(struct timespec begin, struct timespec finish) {
+    return (finish.tv_sec - begin.tv_sec) + (finish.tv_nsec - begin.tv_nsec) / 1e9;
 }
 
-void bubbleSort(int arr[], int n) {
-    int i, j, temp;
-    int swapped;
+// Optimized bubble sort with early termination
+void bubble_sort_algorithm(int array[], int array_size) {
+    int outer_index, inner_index, temporary_value;
+    int swap_occurred;
     
-    for (i = 0; i < n - 1; i++) {
-        swapped = 0;
-        for (j = 0; j < n - i - 1; j++) {
-            comparison_count++;
-            if (arr[j] > arr[j + 1]) {
-                temp = arr[j];
-                arr[j] = arr[j + 1];
-                arr[j + 1] = temp;
-                swapped = 1;
+    // Main sorting loop
+    for (outer_index = 0; outer_index < array_size - 1; outer_index++) {
+        swap_occurred = 0;
+        
+        // Compare adjacent elements
+        for (inner_index = 0; inner_index < array_size - outer_index - 1; inner_index++) {
+            element_comparisons++;
+            
+            // Swap if elements are in wrong order
+            if (array[inner_index] > array[inner_index + 1]) {
+                temporary_value = array[inner_index];
+                array[inner_index] = array[inner_index + 1];
+                array[inner_index + 1] = temporary_value;
+                swap_occurred = 1;
             }
         }
-        if (swapped == 0)
+        
+        // Early exit if no swaps occurred
+        if (swap_occurred == 0) {
             break;
+        }
     }
 }
 
-void printArray(int arr[], int size) {
-    int i;
-    for (i = 0; i < size; i++)
-        printf("%d ", arr[i]);
+// Utility function to display array contents (for debugging)
+void display_array(int array[], int size) {
+    int index;
+    for (index = 0; index < size; index++) {
+        printf("%d ", array[index]);
+    }
     printf("\n");
 }
 
-int main() {
-    int n;
-    scanf("%d", &n); // Read the number of elements
-    int *arr = (int *)malloc(n * sizeof(int));
-    if (arr == NULL) {
-        return 1; // Error handling for malloc
+// Main execution function
+int main(void) {
+    int number_of_elements;
+    
+    // Read array size from input
+    scanf("%d", &number_of_elements);
+    
+    // Allocate memory for the array
+    int *input_array = (int *)malloc(number_of_elements * sizeof(int));
+    if (input_array == NULL) {
+        return 1; // Memory allocation failed
     }
 
-    for (int i = 0; i < n; i++) {
-        scanf("%d", &arr[i]); // Read elements into the array
+    // Read array elements from input
+    for (int element_index = 0; element_index < number_of_elements; element_index++) {
+        scanf("%d", &input_array[element_index]);
     }
     
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
-    bubbleSort(arr, n);
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
+    // Perform timing measurement
+    clock_gettime(CLOCK_MONOTONIC, &timing_start);
+    bubble_sort_algorithm(input_array, number_of_elements);
+    clock_gettime(CLOCK_MONOTONIC, &timing_end);
     
-    double elapsed = get_elapsed_time(start_time, end_time);
+    // Calculate execution duration
+    double execution_time = calculate_execution_duration(timing_start, timing_end);
     
-    // Print timing and comparison count to stderr
-    fprintf(stderr, "TIME: %.9f\n", elapsed);
-    fprintf(stderr, "COMPARISONS: %lld\n", comparison_count);
+    // Output performance metrics to stderr for benchmarking
+    fprintf(stderr, "TIME: %.9f\n", execution_time);
+    fprintf(stderr, "COMPARISONS: %lld\n", element_comparisons);
     
-    // Optionally print the sorted array, but for benchmarking, we might skip this
-    // for (int i = 0; i < n; i++) {
-    //     printf("%d ", arr[i]);
-    // }
-    // printf("\n");
+    // Array output disabled for performance benchmarking
+    // display_array(input_array, number_of_elements);
     
-    free(arr); // Free dynamically allocated memory
+    // Clean up allocated memory
+    free(input_array);
     return 0;
 }
