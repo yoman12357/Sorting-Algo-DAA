@@ -3,11 +3,15 @@ import random
 
 def generate_data(n, data_type):
     if data_type == "random":
-        return [random.randint(0, n * 2) for _ in range(n)]
+        # Generate different random values with larger range and different seed
+        random.seed()  # Use system time for different randomization
+        return [random.randint(1, n * 5) for _ in range(n)]
     elif data_type == "sorted":
-        return list(range(n))
+        # Start from different offset and use different step
+        return [i * 2 + 10 for i in range(n)]
     elif data_type == "reverse_sorted":
-        return list(range(n - 1, -1, -1))
+        # Different reverse sorted pattern
+        return [i * 3 + 5 for i in range(n - 1, -1, -1)]
     else:
         raise ValueError("Invalid data_type. Choose from 'random', 'sorted', 'reverse_sorted'.")
 
