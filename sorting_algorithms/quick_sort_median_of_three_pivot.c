@@ -10,6 +10,20 @@
 #include <time.h>
 #include <stdint.h>
 
+// For Windows compatibility
+#ifdef _WIN32
+#include <windows.h>
+#define CLOCK_MONOTONIC 1
+static int clock_gettime(int clk_id, struct timespec *tp) {
+    LARGE_INTEGER freq, pc;
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&pc);
+    tp->tv_sec = pc.QuadPart / freq.QuadPart;
+    tp->tv_nsec = (pc.QuadPart % freq.QuadPart) * 1000000000 / freq.QuadPart;
+    return 0;
+}
+#endif
+
 // Performance tracking variables
 static long long total_comparisons = 0;
 static struct timespec performance_start, performance_end;
@@ -104,7 +118,7 @@ int main(void) {
     
     // Allocate memory for input data
     int *sorting_array = (int *)malloc(elements_count * sizeof(int));
-    if (sorting_array == NULL) {
+    if (sorting_array == 0) {
         return 1; // Memory allocation failure
     }
 

@@ -8,15 +8,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <stdint.h>
 
 // Global variables for performance tracking
 static long long element_comparisons = 0;
-static struct timespec timing_start, timing_end;
+static clock_t timing_start, timing_end;
 
 // Function to calculate elapsed time in seconds
-double calculate_execution_duration(struct timespec begin, struct timespec finish) {
-    return (finish.tv_sec - begin.tv_sec) + (finish.tv_nsec - begin.tv_nsec) / 1e9;
+double calculate_execution_duration(clock_t begin, clock_t finish) {
+    return ((double)(finish - begin)) / CLOCKS_PER_SEC;
 }
 
 // Optimized bubble sort with early termination
@@ -66,7 +65,7 @@ int main(void) {
     
     // Allocate memory for the array
     int *input_array = (int *)malloc(number_of_elements * sizeof(int));
-    if (input_array == NULL) {
+    if (input_array == 0) {
         return 1; // Memory allocation failed
     }
 
@@ -76,9 +75,9 @@ int main(void) {
     }
     
     // Perform timing measurement
-    clock_gettime(CLOCK_MONOTONIC, &timing_start);
+    timing_start = clock();
     bubble_sort_algorithm(input_array, number_of_elements);
-    clock_gettime(CLOCK_MONOTONIC, &timing_end);
+    timing_end = clock();
     
     // Calculate execution duration
     double execution_time = calculate_execution_duration(timing_start, timing_end);

@@ -3,6 +3,20 @@
 #include <time.h>
 #include <stdint.h>
 
+// For Windows compatibility
+#ifdef _WIN32
+#include <windows.h>
+#define CLOCK_MONOTONIC 1
+static int clock_gettime(int clk_id, struct timespec *tp) {
+    LARGE_INTEGER freq, pc;
+    QueryPerformanceFrequency(&freq);
+    QueryPerformanceCounter(&pc);
+    tp->tv_sec = pc.QuadPart / freq.QuadPart;
+    tp->tv_nsec = (pc.QuadPart % freq.QuadPart) * 1000000000 / freq.QuadPart;
+    return 0;
+}
+#endif
+
 long long comparison_count = 0;
 struct timespec start_time, end_time;
 
