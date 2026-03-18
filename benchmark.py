@@ -43,11 +43,20 @@ def build_executable(source_file_path, binary_output_path):
     """Compiles C source code into executable binary."""
     print(f"Building executable from {source_file_path}...")
     try:
+<<<<<<< HEAD
         # Use different compilation flags for Windows compatibility
         gcc_cmd = ["gcc", source_file_path, "-o", binary_output_path, 
                    "-Wl,--stack=268435456", "-std=c99", "-DNULL=0",
                    "-U__STRICT_ANSI__", "-D_CRT_SECURE_NO_WARNINGS"]
         subprocess.run(gcc_cmd, check=True, capture_output=True, text=True)
+=======
+        subprocess.run(
+            ["gcc", source_file_path, "-o", binary_output_path],
+            check=True,
+            capture_output=True,
+            text=True
+        )
+>>>>>>> aca49b0 (final report + graphs)
         print(f"Successfully compiled {source_file_path} -> {binary_output_path}")
     except subprocess.CalledProcessError as e:
         print(f"Compilation failed for {source_file_path}:")

@@ -35,7 +35,7 @@ double compute_time_elapsed(struct timespec start_timestamp, struct timespec end
 }
 
 // Exchange values between two integer pointers
-inline void exchange_values(int* first_pointer, int* second_pointer) {
+static inline void exchange_values(int* first_pointer, int* second_pointer) {
     int temporary_storage = *first_pointer;
     *first_pointer = *second_pointer;
     *second_pointer = temporary_storage;

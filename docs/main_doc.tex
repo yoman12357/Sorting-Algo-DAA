@@ -36,16 +36,12 @@ This research prioritizes empirical performance evaluation over theoretical impl
 To establish measurement reliability and experimental reproducibility, the following testing infrastructure and procedural approach were implemented:
 
 \begin{itemize}
-    \item \textbf{Computational Environment:} All experimental trials were executed on an ASUS Vivobook 16X system featuring an Intel Core i7 processor and NVIDIA RTX 4050 Studio graphics, operating within the Windows ecosystem.
-    \item \textbf{Timing Implementation:} Performance measurements utilized Python's \texttt{time.perf\_counter()} for overall benchmark orchestration. Core timing for C algorithm implementations was conducted internally using \texttt{clock\_gettime(CLOCK\_MONOTONIC)} to achieve nanosecond precision and eliminate Python subprocess processing overhead.
-    \item \textbf{Experimental Repetition Protocol:} Each individual sorting experiment (specific algorithm execution on designated input size and configuration) was conducted \textbf{seven times} to ensure statistical reliability, as configured in the \texttt{benchmark.py} framework.
-    \item \textbf{Performance Reporting:} For each experimental configuration, the \textbf{mean execution duration} across all seven trials is documented. All timing measurements are presented in \textbf{seconds (s)} with microsecond precision.
-    \item \textbf{Dataset Selection Strategy:} Benchmarking employed pre-generated test datasets specifically designed to evaluate algorithmic behavior across different scenarios:
-    \begin{itemize}
-        \item \textbf{Input Scale Parameters:} Experimental evaluation encompassed the following dataset sizes: 100, 500, 1000, 5000, 10000, 25000, 50000, 75000, and 100000 elements.
-        \item \textbf{Input Configuration Types:} For each dataset size, three distinct data arrangements were analyzed: Randomized distributions (representing average-case scenarios), Pre-sorted sequences (best-case for adaptive algorithms), and Reverse-ordered arrays (worst-case for many implementations).
-    \end{itemize}
-    \item \textbf{Input Consistency Protocol:} Identical dataset files were utilized across all sorting algorithm implementations to ensure equitable performance comparison and eliminate data-dependent variability.
+    \item \textbf{Computational Environment:} The experiments were carried out on an HP Victus laptop powered by an Intel Core i7 processor and NVIDIA RTX 4050 GPU. The implementation and testing were performed in a Kali Linux environment hosted on Oracle VirtualBox.
+    \item \textbf{Timing Implementation:} The runtime of each algorithm was recorded within the C programs using the \texttt{clock\_gettime} function with the \texttt{CLOCK\_MONOTONIC} clock source, ensuring precise measurement independent of external execution overhead.
+    \item \textbf{Experimental Repetition Protocol:} Each experimental configuration was executed a total of \textbf{7 independent runs}, and observations were aggregated to obtain consistent and reliable performance measurements.
+    \item \textbf{Performance Reporting:} For each test case, the final timing value corresponds to the \textbf{average execution duration} computed over all runs, thereby smoothing out fluctuations caused by transient system conditions.
+    \item \textbf{Dataset Selection Strategy:} The datasets were generated in advance using a dedicated script, producing three distinct categories: randomly ordered values, already sorted sequences, and reverse-ordered sequences. Multiple input sizes were considered to observe performance trends across varying scales.
+    \item \textbf{Input Consistency Protocol:} Yes, identical datasets were supplied to every sorting algorithm to maintain fairness in comparison, ensuring that performance differences arise solely from the algorithmic behavior rather than variations in input.
 \end{itemize}
 
 \section{Quick Sort Variant Performance Analysis}
@@ -69,42 +65,42 @@ The First Element Pivot strategy exhibits quadratic degradation ($O(n^2)$) when 
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/graphs/quick_sort_analysis/sorting_algorithms_best_case_(sorted_input)_case_time.png}
+    \includegraphics[width=0.8\textwidth]{images/graphs/quick_sort_analysis/algorithm_performance_best_case_(sorted_input)_times.png}
     \caption{Quick Sort Variants: Best Case (Sorted Input) - Linear Scale}
     \label{fig:qs_best}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/graphs/quick_sort_analysis/sorting_algorithms_best_case_(sorted_input)_case_time_log_scale.png}
+    \includegraphics[width=0.8\textwidth]{images/graphs/quick_sort_analysis/algorithm_performance_best_case_(sorted_input)_time_log_scales.png}
     \caption{Quick Sort Variants: Best Case (Sorted Input) - Logarithmic Scale}
     \label{fig:qs_best_log}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/graphs/quick_sort_analysis/sorting_algorithms_worst_case_(reverse_sorted_input)_case_time.png}
+    \includegraphics[width=0.8\textwidth]{images/graphs/quick_sort_analysis/algorithm_performance_worst_case_(reverse_sorted_input)_times.png}
     \caption{Quick Sort Variants: Worst Case (Reverse Sorted Input) - Linear Scale}
     \label{fig:qs_worst}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/graphs/quick_sort_analysis/sorting_algorithms_worst_case_(reverse_sorted_input)_case_time_log_scale.png}
+    \includegraphics[width=0.8\textwidth]{images/graphs/quick_sort_analysis/algorithm_performance_worst_case_(reverse_sorted_input)_time_log_scales.png}
     \caption{Quick Sort Variants: Worst Case (Reverse Sorted Input) - Logarithmic Scale}
     \label{fig:qs_worst_log}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/graphs/quick_sort_analysis/sorting_algorithms_average_case_(random_input)_case_time.png}
+    \includegraphics[width=0.8\textwidth]{images/graphs/quick_sort_analysis/algorithm_performance_average_case_(random_input)_times.png}
     \caption{Quick Sort Variants: Average Case (Random Input) - Linear Scale}
     \label{fig:qs_avg}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/graphs/quick_sort_analysis/sorting_algorithms_average_case_(random_input)_case_time_log_scale.png}
+    \includegraphics[width=0.8\textwidth]{images/graphs/quick_sort_analysis/algorithm_performance_average_case_(random_input)_time_log_scales.png}
     \caption{Quick Sort Variants: Average Case (Random Input) - Logarithmic Scale}
     \label{fig:qs_avg_log}
 \end{figure}
@@ -147,42 +143,42 @@ Conversely, \textbf{Selection Sort} demonstrated consistently inferior performan
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/graphs/7_sorting_algo_comparisons/sorting_algorithms_best_case_(sorted_input)_case_time.png}
+    \includegraphics[width=0.8\textwidth]{images/graphs/7_sorting_algo_comparisons/algorithm_performance_best_case_(sorted_input)_time.png}
     \caption{All Sorts: Best Case (Sorted Input) - Linear Scale}
     \label{fig:all_best}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/graphs/7_sorting_algo_comparisons/sorting_algorithms_best_case_(sorted_input)_case_time_log_scale.png}
+    \includegraphics[width=0.8\textwidth]{images/graphs/7_sorting_algo_comparisons/algorithm_performance_best_case_(sorted_input)_time_log_scale.png}
     \caption{All Sorts: Best Case (Sorted Input) - Logarithmic Scale}
     \label{fig:all_best_log}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/graphs/7_sorting_algo_comparisons/sorting_algorithms_worst_case_(reverse_sorted_input)_case_time.png}
+    \includegraphics[width=0.8\textwidth]{images/graphs/7_sorting_algo_comparisons/algorithm_performance_worst_case_(reverse_sorted_input)_time.png}
     \caption{All Sorts: Worst Case (Reverse Sorted Input) - Linear Scale}
     \label{fig:all_worst}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/graphs/7_sorting_algo_comparisons/sorting_algorithms_worst_case_(reverse_sorted_input)_case_time_log_scale.png}
+    \includegraphics[width=0.8\textwidth]{images/graphs/7_sorting_algo_comparisons/algorithm_performance_worst_case_(reverse_sorted_input)_time_log_scale.png}
     \caption{All Sorts: Worst Case (Reverse Sorted Input) - Logarithmic Scale}
     \label{fig:all_worst_log}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/graphs/7_sorting_algo_comparisons/sorting_algorithms_average_case_(random_input)_case_time.png}
+    \includegraphics[width=0.8\textwidth]{images/graphs/7_sorting_algo_comparisons/algorithm_performance_average_case_(random_input)_time.png}
     \caption{All Sorts: Average Case (Random Input) - Linear Scale}
     \label{fig:all_avg}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.8\textwidth]{images/graphs/7_sorting_algo_comparisons/sorting_algorithms_average_case_(random_input)_case_time_log_scale.png}
+    \includegraphics[width=0.8\textwidth]{images/graphs/7_sorting_algo_comparisons/algorithm_performance_average_case_(random_input)_time_log_scale.png}
     \caption{All Sorts: Average Case (Random Input) - Logarithmic Scale}
     \label{fig:all_avg_log}
 \end{figure}
